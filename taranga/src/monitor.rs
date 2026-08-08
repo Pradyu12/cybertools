@@ -55,7 +55,7 @@ pub fn run_monitor(backend: &Backend, interval: Duration) -> Result<(), crate::b
     let mut cycle = 0u32;
 
     println!("\x1b[2J\x1b[H"); // clear screen
-    println!("wifiti monitor — Ctrl+C to stop\n");
+    println!("taranga monitor — Ctrl+C to stop\n");
 
     loop {
         let started = Instant::now();

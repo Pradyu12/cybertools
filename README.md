@@ -8,6 +8,29 @@ banner grabbing, streams everything to a **live web dashboard**, hands open
 ports to `nmap` for deep scanning, and emits clean human, greppable, or JSON
 output.
 
+## Install — one-liner, compiles from source (feroxbuster style)
+
+**Already have Rust?** It's a single `cargo install` — cargo downloads the
+source and compiles it for you, exactly like `cargo install feroxbuster`:
+
+```bash
+cargo install vajra-rs
+```
+
+**No Rust installed? No setup needed — this one-liner installs Rust if
+missing, then compiles + installs:**
+
+```bash
+# Linux / macOS / WSL
+curl -sSL https://raw.githubusercontent.com/Pradyu12/cybertools/main/install.sh | bash
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/Pradyu12/cybertools/main/install.ps1 | iex
+```
+
+The binaries land in `~/.cargo/bin` (`vajra`, plus `taranga` if you install
+the full kit). Add `~/.cargo/bin` to your `PATH` if needed.
+
 ```
 Scan report: 1 host(s), 13 open port(s), 194 probe(s) in 3.35s (concurrency 2000)
 Host 127.0.0.1 (-)

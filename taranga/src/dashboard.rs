@@ -1,6 +1,6 @@
 //! Live web dashboard.
 //!
-//! With `--web`, wifiti embeds a tiny HTTP + WebSocket server on
+//! With `--web`, taranga embeds a tiny HTTP + WebSocket server on
 //! `127.0.0.1:<port>`. The scan/monitor/crack engine pushes JSON events
 //! through a broadcast channel; every connected browser tab renders them in
 //! real time, and late-joining tabs receive a full snapshot of the state so

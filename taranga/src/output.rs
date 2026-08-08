@@ -117,7 +117,7 @@ pub fn emit(aps: &[AccessPoint], json: bool, csv: bool, output: Option<&str>, co
             println!("[i] wrote {} AP(s) to {}", aps.len(), path);
         }
         None => {
-            // Tolerate a closed pipe (e.g. `wifiti scan | head`).
+            // Tolerate a closed pipe (e.g. `taranga scan | head`).
             let stdout = std::io::stdout();
             let mut lock = stdout.lock();
             if let Err(e) = lock.write_all(body.as_bytes()) {

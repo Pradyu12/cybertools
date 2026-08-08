@@ -1,4 +1,4 @@
-//! wifiti — a wifite-style Wi-Fi auditing toolkit in Rust.
+//! taranga — a wifite-style Wi-Fi auditing toolkit in Rust.
 //!
 //! Subcommands:
 //!   scan          one-shot AP scan (human / JSON / CSV)
@@ -19,10 +19,10 @@ use std::time::Duration;
 
 #[derive(Parser)]
 #[command(
-    name = "wifiti",
+    name = "taranga",
     version,
-    about = "wifiti — wifite-style Wi-Fi auditing: AP scanning, live monitoring, PMKID cracking",
-    long_about = "wifiti is a Rust re-imagining of wifite's core workflow: scan nearby access points \
+    about = "taranga — wifite-style Wi-Fi auditing: AP scanning, live monitoring, PMKID cracking",
+    long_about = "taranga is a Rust re-imagining of wifite's core workflow: scan nearby access points \
                   (netsh on Windows, nmcli/iw on Linux), monitor them live as you move around, and \
                   dictionary-crack captured WPA/WPA2 PMKID hashes entirely offline in pure Rust."
 )]

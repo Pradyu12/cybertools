@@ -1,9 +1,12 @@
 [package]
-name = "wifiti"
+name = "taranga"
 version = "0.1.0"
 edition = "2021"
-description = "Wifiti — a wifite-style Wi-Fi auditing toolkit in Rust: AP scanning, live signal monitoring, and pure-Rust PMKID cracking."
+description = "Taranga — a wifite-style Wi-Fi auditing toolkit in Rust: AP scanning, live signal monitoring, and pure-Rust PMKID cracking."
 license = "MIT"
+repository = "https://github.com/Pradyu12/cybertools"
+keywords = ["wifi", "network", "security", "wardriving", "pmkid"]
+categories = ["command-line-utilities", "network-programming"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

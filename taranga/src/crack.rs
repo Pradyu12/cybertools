@@ -199,7 +199,7 @@ mod tests {
     fn crack_finds_password_from_wordlist() {
         let t = PmkidTarget::reference_vector();
         let dir = std::env::temp_dir();
-        let path = dir.join("wifiti_test_wordlist.txt");
+        let path = dir.join("taranga_test_wordlist.txt");
         std::fs::write(&path, "password123\nletmein\nwifi-password-42\ntest\n").unwrap();
         let found = crack_wordlist(&t, path.to_str().unwrap(), None).unwrap();
         assert_eq!(found.as_deref(), Some("wifi-password-42"));

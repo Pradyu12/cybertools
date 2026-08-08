@@ -1,8 +1,28 @@
-# wifiti
+# taranga · तरंग
 
 A **wifite-style Wi-Fi auditing toolkit written in Rust**: scan nearby access
 points, monitor them live, and dictionary-crack captured WPA/WPA2 **PMKID**
 hashes entirely offline in pure Rust (no Python, no aircrack, no GPU).
+
+> **Name:** तरंग / *taranga* — Sanskrit for **"wave"** — radio waves, of course.
+
+## Install — one-liner, compiles from source (feroxbuster style)
+
+**Already have Rust?**
+
+```bash
+cargo install taranga
+```
+
+**No Rust installed?**
+
+```bash
+# Linux / macOS / WSL
+curl -sSL https://raw.githubusercontent.com/Pradyu12/cybertools/main/install.sh | bash
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/Pradyu12/cybertools/main/install.ps1 | iex
+```
 
 ```
 CH   BSSID               SIG% dBm   SECURITY             SSID
@@ -52,7 +72,7 @@ Cargo crates (fetched automatically): `clap`, `serde`, `sha1`, `hmac`, `pbkdf2`,
 ## Build & test
 
 ```bash
-cargo build --release        # binary at target/release/wifiti(.exe)
+cargo build --release        # binary at target/release/taranga(.exe)
 cargo test                   # 12 unit tests (parsers + PMKID vectors)
 ```
 
@@ -60,27 +80,27 @@ cargo test                   # 12 unit tests (parsers + PMKID vectors)
 
 ```bash
 # One-shot scan of everything nearby
-wifiti scan
+taranga scan
 
 # Machine-readable output
-wifiti scan --json
-wifiti scan --csv
-wifiti scan --json -o scan.json
+taranga scan --json
+taranga scan --csv
+taranga scan --json -o scan.json
 
 # Live monitoring (rescan every 3s, watch APs appear/disappear)
-wifiti monitor -i 3
+taranga monitor -i 3
 
 # Live web dashboard (auto-opens in your browser; Ctrl+C to exit)
-wifiti monitor -i 4 --web
-wifiti scan --web --json -o scan.json
-wifiti crack-pmkid ... --web
+taranga monitor -i 4 --web
+taranga scan --web --json -o scan.json
+taranga crack-pmkid ... --web
 
 # Dashboard on another port / don't auto-open the browser
-wifiti monitor -i 4 --web --web-port 9090 --no-open
+taranga monitor -i 4 --web --web-port 9090 --no-open
 
 # Linux: choose the wireless interface
-wifiti scan --iface wlan0
-wifiti monitor --iface wlan0
+taranga scan --iface wlan0
+taranga monitor --iface wlan0
 ```
 
 ### Cracking a PMKID
@@ -89,7 +109,7 @@ Capturing the PMKID itself requires a monitor-mode adapter (e.g.
 `hcxdumptool`/`hcxtools` on Linux). Once you have the 32-hex-digit hash:
 
 ```bash
-wifiti crack-pmkid \
+taranga crack-pmkid \
   --pmkid a2c30e23df4e38ddfc45746ab3fdf6d4 \
   --ap-mac 6c:4f:89:95:3c:de \
   --client-mac 78:2b:46:51:8e:48 \
