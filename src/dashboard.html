@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VAJRA // LIVE SWEEP</title>
+<style>
+  :root {
+    --bg: #000300;
+    --green: #00ff41;
+    --green-mid: #00c030;
+    --green-dim: #1f6f43;
+    --green-faint: #0d3a20;
+    --amber: #ffb000;
+    --red: #ff3b3b;
+    --text: #b9ffca;
+    --muted: #4d9a6a;
+    --mono: "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    position: relative;
+    overflow-x: hidden;
+  }
+  /* Matrix rain behind everything */
+  #matrix { position: fixed; inset: 0; z-index: 0; opacity: .16; pointer-events: none; }
+  /* CRT scanlines */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 998; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.25) 0 1px, transparent 1px 3px);
+  }
+  /* CRT vignette + green phosphor glow */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 997; pointer-events: none;
+    background:
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.6) 100%),
+      radial-gradient(ellipse at center, rgba(0,255,65,.04), transparent 70%);
+  }
+  ::selection { background: var(--green); color: #000; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #000600; }
+  ::-webkit-scrollbar-thumb { background: var(--green-dim); border: 2px solid #000600; }
+
+  .wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 26px 26px 190px; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 18px;
+  }
+  .banner { color: var(--green); text-shadow: 0 0 12px rgba(0,255,65,.65), 0 0 40px rgba(0,255,65,.25); font-size: 13px; line-height: 1.15; white-space: pre; }
+  .prompt { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .prompt .cmd { color: var(--text); }
+  .cursor { display: inline-block; width: .6em; color: var(--green); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .status {
+    font-size: 12px; letter-spacing: 2px; text-align: right;
+    border: 1px solid var(--green-dim); padding: 8px 14px;
+    background: rgba(0, 30, 10, .5);
+  }
+  .status .st { display: block; font-size: 10px; color: var(--muted); letter-spacing: 3px; margin-bottom: 4px; }
+  #statusText.running { color: var(--green); animation: blink 1.1s steps(1) infinite; text-shadow: 0 0 8px rgba(0,255,65,.7); }
+  #statusText.done { color: var(--green); text-shadow: 0 0 8px rgba(0,255,65,.7); }
+  #statusText.interrupted { color: var(--amber); text-shadow: 0 0 8px rgba(255,176,0,.6); }
+  #statusText.offline { color: var(--red); }
+  #statusText.udp { color: var(--amber); text-shadow: 0 0 8px rgba(255,176,0,.6); animation: blink 1.1s steps(1) infinite; }
+  #statusText.glitch { animation: glitch .35s steps(2); }
+  @keyframes glitch {
+    0% { transform: translate(0); text-shadow: 2px 0 var(--red), -2px 0 var(--amber); }
+    33% { transform: translate(-2px, 1px); text-shadow: -3px 0 var(--red), 3px 0 var(--amber); }
+    66% { transform: translate(2px, -1px); text-shadow: 3px 0 var(--red), -3px 0 var(--amber); }
+    100% { transform: translate(0); }
+  }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px;
+  }
+  .stat {
+    border: 1px solid var(--green-dim); background: rgba(0,20,6,.55);
+    padding: 10px 12px; position: relative;
+  }
+  .stat .k {
+    font-size: 9px; color: var(--muted); letter-spacing: 2.5px; margin-bottom: 7px;
+    text-transform: uppercase;
+  }
+  .stat .k::before { content: "> "; color: var(--green); }
+  .stat .v {
+    font-size: 15px; font-weight: 700; color: var(--green);
+    text-shadow: 0 0 8px rgba(0,255,65,.5);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .stat .v.plain { color: var(--text); text-shadow: none; }
+  .stat .v.amber { color: var(--amber); text-shadow: 0 0 8px rgba(255,176,0,.4); }
+
+  .progwrap { border: 1px solid var(--green-dim); background: rgba(0,20,6,.55); padding: 12px 14px; margin-bottom: 18px; }
+  .proghead { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .proghead #progPct { color: var(--green); font-weight: 700; text-shadow: 0 0 6px rgba(0,255,65,.6); }
+  .progbar {
+    height: 16px; background: #000a02; border: 1px solid var(--green-dim);
+    overflow: hidden; position: relative;
+  }
+  .progfill {
+    height: 100%; width: 0%;
+    background: repeating-linear-gradient(90deg, var(--green-mid) 0 10px, var(--green) 10px 12px);
+    box-shadow: 0 0 12px rgba(0,255,65,.8), inset 0 0 6px rgba(0,0,0,.4);
+    transition: width .3s ease;
+  }
+  .progmeta { display: flex; justify-content: space-between; margin-top: 7px; font-size: 10px; color: var(--muted); }
+  .progmeta #wsStatus.live { color: var(--green); }
+  .progmeta #wsStatus.offline { color: var(--red); }
+
+  #hosts { min-height: 120px; }
+  .host {
+    border: 1px solid var(--green-dim); background: rgba(0,20,6,.5);
+    margin-bottom: 14px; position: relative;
+    animation: rise .3s ease;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .hosthead {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px; border-bottom: 1px solid var(--green-faint);
+    background: rgba(0,255,65,.04);
+  }
+  .hostip { color: var(--green); font-weight: 700; font-size: 14px; text-shadow: 0 0 8px rgba(0,255,65,.5); }
+  .hostip::before { content: "$ host "; color: var(--muted); font-weight: 400; font-size: 11px; }
+  .hostcount { color: var(--muted); font-size: 10px; letter-spacing: 2px; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 9px; letter-spacing: 2px; color: var(--muted);
+    padding: 7px 14px; border-bottom: 1px solid var(--green-faint); font-weight: 400;
+  }
+  th::before { content: "// "; color: var(--green); }
+  td { padding: 7px 14px; border-bottom: 1px solid rgba(31,111,67,.25); font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  tr.portrow { transition: background .2s; }
+  tr.portrow:hover { background: rgba(0,255,65,.06); }
+  tr.portrow.new td { animation: flash 1.1s ease; }
+  @keyframes flash {
+    0% { background: rgba(0,255,65,.30); color: #000; }
+    100% { background: transparent; }
+  }
+  td.port { color: var(--green); font-weight: 700; white-space: nowrap; text-shadow: 0 0 6px rgba(0,255,65,.5); }
+  td.port .ps { margin-left: 6px; color: var(--green-mid); font-size: 9px; text-shadow: none; letter-spacing: 1px; }
+  td.port .ps.filt { color: var(--amber); }
+  td.port .ps.udp { color: var(--amber); }
+  tr.portrow.udp td.port { color: var(--amber); text-shadow: 0 0 6px rgba(255,176,0,.5); }
+  tr.portrow.udp td.svc { color: var(--text); }
+  td.svc { color: var(--amber); }
+  td.ver { color: var(--muted); white-space: nowrap; }
+  td.ban { color: var(--text); max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; }
+  /* Host discovery fleet */
+  .fleethead {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 8px;
+  }
+  .fleethead .up { color: var(--green); font-weight: 700; text-shadow: 0 0 6px rgba(0,255,65,.5); }
+  #fleet { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 8px; margin-bottom: 20px; }
+  .chip {
+    border: 1px solid var(--green-dim); background: rgba(0,20,6,.5);
+    padding: 8px 11px; display: flex; flex-direction: column; gap: 5px;
+    animation: rise .25s ease;
+  }
+  .chip.icmp { border-color: var(--green-mid); box-shadow: 0 0 10px rgba(0,255,65,.15); }
+  .chip.tcp { border-color: var(--amber); box-shadow: 0 0 10px rgba(255,176,0,.12); }
+  .chip .cip { color: var(--green); font-weight: 700; font-size: 13px; text-shadow: 0 0 8px rgba(0,255,65,.45); }
+  .chip .cmeta { display: flex; justify-content: space-between; align-items: center; font-size: 9px; letter-spacing: 1.5px; color: var(--muted); }
+  .chip .cmethod { color: var(--amber); }
+  .chip.icmp .cmethod { color: var(--green); }
+  .chip .crtt { color: var(--text); }
+
+  .empty {
+    text-align: center; color: var(--muted); padding: 46px 20px; font-size: 12px;
+    border: 1px dashed var(--green-dim);
+  }
+  .empty .blink { color: var(--green); animation: blink 1s steps(1) infinite; }
+
+  /* Bottom terminal log */
+  .logbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+    background: rgba(0, 8, 2, .94); border-top: 1px solid var(--green-dim);
+    height: 170px; display: flex; flex-direction: column;
+  }
+  .loghead {
+    display: flex; justify-content: space-between; padding: 6px 14px;
+    border-bottom: 1px solid var(--green-faint); font-size: 10px; letter-spacing: 2px;
+    color: var(--muted); background: rgba(0,255,65,.05);
+  }
+  .loghead button {
+    background: none; border: 1px solid var(--green-dim); color: var(--muted);
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1px; cursor: pointer; padding: 2px 8px;
+  }
+  .loghead button:hover { color: var(--green); border-color: var(--green-mid); }
+  #log {
+    flex: 1; overflow-y: auto; padding: 8px 14px;
+    font-size: 11px; line-height: 1.55;
+  }
+  #log .l { color: var(--text); white-space: pre-wrap; word-break: break-all; }
+  #log .l .t { color: var(--muted); }
+  #log .l.open { color: var(--green); text-shadow: 0 0 6px rgba(0,255,65,.5); }
+  #log .l.warn { color: var(--amber); }
+  #log .l.err { color: var(--red); }
+  #log .l.done { color: var(--green); font-weight: 700; }
+  .logbar.hidden { display: none; }
+
+  @media (max-width: 960px) {
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .banner { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<div class="wrap">
+  <header class="topbar">
+    <div>
+      <pre class="banner">█  █ ██  ██ ███  ██
+█  ██  █  █ █  ██  █
+█  █████  █ ███ ████
+█  ██  █  █ █ █ ██  █
+ ██ █  █ █  █  █ █  █</pre>
+      <div class="prompt"><span class="cmd">$ vajra --live --sweep --all-ports</span><span class="cursor">▊</span></div>
+    </div>
+    <div class="status">
+      <span class="st">STATUS</span>
+      <span id="statusText" class="offline">OFFLINE</span>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><div class="k">Targets</div><div class="v plain" id="statTargets" title="">—</div></div>
+    <div class="stat"><div class="k">Ports / Host</div><div class="v plain" id="statPorts">—</div></div>
+    <div class="stat"><div class="k">Probes Done</div><div class="v" id="statProbes">—</div></div>
+    <div class="stat"><div class="k">Open Ports</div><div class="v" id="statOpen">0</div></div>
+    <div class="stat"><div class="k">Hosts Up</div><div class="v" id="statUp">—</div></div>
+    <div class="stat"><div class="k">Concurrency</div><div class="v amber" id="statConc">—</div></div>
+    <div class="stat"><div class="k">Elapsed</div><div class="v" id="statElapsed">0.0s</div></div>
+  </section>
+
+  <div class="progwrap">
+    <div class="proghead"><span id="progLabel">[ idle ] waiting for scan signal…</span><span id="progPct">0%</span></div>
+    <div class="progbar"><div class="progfill" id="progFill"></div></div>
+    <div class="progmeta"><span id="progEta"></span><span id="wsStatus" class="offline">channel: connecting…</span></div>
+  </div>
+
+  <section class="fleethead" id="fleethead" style="display:none"><span>// HOST DISCOVERY</span><span class="up" id="fleetCount">0 UP</span></section>
+  <div id="fleet" style="display:none"></div>
+
+  <main id="hosts">
+    <div class="empty"><span class="blink">▊</span> establishing uplink to scan engine…</div>
+  </main>
+</div>
+
+<div class="logbar" id="logbar">
+  <div class="loghead">
+    <span>// ACTIVITY LOG — VAJRA · वज्र</span>
+    <button id="logToggle" title="toggle log">[ HIDE ]</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  started: false, finished: false, interrupted: false,
+  targets: [], totalPorts: 0, totalJobs: 0,
+  done: 0, concurrency: 0, elapsedMs: 0,
+  phase: "",
+  hosts: new Map(),    // ip -> { ip, ports: Map(port -> entry) }
+  hostsUp: new Map(),  // ip -> { ip, method, rtt_ms }
+  lastLogPct: -1,
+};
+
+const esc = (s) => (s == null ? "" : String(s))
+  .replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function fmtElapsed(ms) {
+  const s = ms / 1000;
+  if (s < 60) return s.toFixed(1) + "s";
+  const m = Math.floor(s / 60);
+  return m + "m " + Math.floor(s % 60) + "s";
+}
+
+function openCount() {
+  let n = 0;
+  for (const h of state.hosts.values())
+    for (const p of h.ports.values()) if (p.state === "open") n++;
+  return n;
+}
+
+function filteredCount() {
+  let n = 0;
+  for (const h of state.hosts.values())
+    for (const p of h.ports.values()) if (p.state === "open|filtered") n++;
+  return n;
+}
+
+function nowStamp() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+
+function log(text, cls) {
+  const line = document.createElement("div");
+  line.className = "l" + (cls ? " " + cls : "");
+  line.innerHTML = '<span class="t">[' + nowStamp() + "]</span> " + text;
+  const box = $("log");
+  box.appendChild(line);
+  while (box.children.length > 300) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setStatus(kind, text) {
+  const el = $("statusText");
+  el.className = kind;
+  el.textContent = text;
+  if (kind === "done") { el.classList.add("glitch"); setTimeout(() => el.classList.remove("glitch"), 400); }
+}
+
+function updateProgress() {
+  const pct = state.totalJobs > 0 ? Math.min(100, (state.done / state.totalJobs) * 100) : 0;
+  $("statProbes").textContent = state.totalJobs ? state.done + " / " + state.totalJobs : "—";
+  $("progFill").style.width = pct + "%";
+  $("progPct").textContent = Math.floor(pct) + "%";
+  if (state.done > 0 && state.done < state.totalJobs) {
+    const eta = (state.elapsedMs / state.done) * (state.totalJobs - state.done);
+    $("progEta").textContent = "ETA " + fmtElapsed(eta);
+  } else if (state.totalJobs > 0 && state.done >= state.totalJobs) {
+    $("progEta").textContent = "sweep complete";
+  }
+  // log milestones every 10%
+  const dec = Math.floor((pct / 100) * 10);
+  if (state.totalJobs > 0 && dec > state.lastLogPct && dec <= 10) {
+    state.lastLogPct = dec;
+    log("progress: " + state.done + "/" + state.totalJobs + " probes (" + Math.floor(pct) + "%) @ concurrency " + state.concurrency);
+  }
+}
+
+function updateStats() {
+  $("statTargets").textContent = state.targets.length ? state.targets.join(", ") : "—";
+  $("statTargets").title = state.targets.join(", ");
+  $("statPorts").textContent = state.totalPorts || "—";
+  const filt = filteredCount();
+  $("statOpen").textContent = openCount() + (filt ? " / " + filt + " filt" : "");
+  $("statOpen").title = filt ? openCount() + " open + " + filt + " open|filtered" : "";
+  $("statUp").textContent = state.hostsUp.size || "—";
+  $("statConc").textContent = state.concurrency || "—";
+  $("statElapsed").textContent = fmtElapsed(state.elapsedMs);
+}
+
+function renderFleet() {
+  const head = $("fleethead"), root = $("fleet");
+  const visible = state.hostsUp.size > 0 || state.phase === "discovery";
+  head.style.display = visible ? "flex" : "none";
+  root.style.display = visible ? "grid" : "none";
+  $("fleetCount").textContent = state.hostsUp.size + " UP";
+  if (!visible) return;
+  root.innerHTML = "";
+  const sorted = [...state.hostsUp.values()].sort((a, b) => a.ip.localeCompare(b.ip));
+  for (const h of sorted) {
+    const chip = document.createElement("div");
+    chip.className = "chip " + (h.method === "icmp" ? "icmp" : "tcp");
+    const ip = document.createElement("div");
+    ip.className = "cip";
+    ip.textContent = h.ip;
+    const meta = document.createElement("div");
+    meta.className = "cmeta";
+    const m = document.createElement("span");
+    m.className = "cmethod";
+    m.textContent = (h.method || "?").toUpperCase();
+    const r = document.createElement("span");
+    r.className = "crtt";
+    r.textContent = h.rtt_ms != null ? h.rtt_ms + "ms" : "—";
+    meta.append(m, r);
+    chip.append(ip, meta);
+    root.appendChild(chip);
+  }
+}
+
+function renderHosts() {
+  const root = $("hosts");
+  if (!state.started) {
+    root.innerHTML = '<div class="empty"><span class="blink">▊</span> waiting for scan engine…</div>';
+    return;
+  }
+  if (state.hosts.size === 0) {
+    if (state.phase === "discovery") {
+      root.innerHTML = '<div class="empty"><span class="blink">▊</span> probing <b>' +
+        (state.totalJobs || "…") + "</b> host(s) for liveness — " + state.hostsUp.size + " up…</div>";
+    } else if (state.phase === "udp") {
+      root.innerHTML = '<div class="empty"><span class="blink">▊</span> sweeping UDP — no responsive ports yet…</div>';
+    } else {
+      root.innerHTML = '<div class="empty"><span class="blink">▊</span> sweeping <b>' +
+        (state.totalPorts || "…") + "</b> ports per host — no open ports yet…</div>";
+    }
+    return;
+  }
+  const sorted = [...state.hosts.values()].sort((a, b) => a.ip.localeCompare(b.ip));
+  root.innerHTML = "";
+  for (const h of sorted) {
+    const card = document.createElement("div");
+    card.className = "host";
+    const head = document.createElement("div");
+    head.className = "hosthead";
+    const ip = document.createElement("span");
+    ip.className = "hostip";
+    ip.textContent = h.ip;
+    const cnt = document.createElement("span");
+    cnt.className = "hostcount";
+    const openN = [...h.ports.values()].filter((p) => p.state === "open").length;
+    const filt = h.ports.size - openN;
+    cnt.textContent = openN + " OPEN" + (filt ? " · " + filt + " FILT" : "");
+    head.append(ip, cnt);
+
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    hr.innerHTML = "<th>PORT</th><th>SERVICE</th><th>VERSION</th><th>BANNER</th>";
+    thead.appendChild(hr);
+    const tbody = document.createElement("tbody");
+    const ports = [...h.ports.values()].sort((a, b) => a.port - b.port);
+    for (const p of ports) {
+      const tr = document.createElement("tr");
+      tr.className = "portrow" + (p._new ? " new" : "");
+      p._new = false;
+      const banner = p.banner ? p.banner : "(no banner)";
+      const short = banner.length > 100 ? banner.slice(0, 100) + "…" : banner;
+      const proto = p.proto || "tcp";
+      const isUdp = proto === "udp";
+      const filt = p.state === "open|filtered";
+      const psLabel = filt ? "OPEN|FILTERED" : "OPEN";
+      const psClass = filt ? "ps filt" : (isUdp ? "ps udp" : "ps");
+      if (isUdp) tr.classList.add("udp");
+      tr.innerHTML =
+        "<td class='port'>" + p.port + "/" + proto + "<span class='" + psClass + "'>" + psLabel + "</span></td>" +
+        "<td class='svc'>" + esc(p.service || "unknown") + "</td>" +
+        "<td class='ver'>" + esc(p.version || "—") + "</td>" +
+        "<td class='ban' title='" + esc(banner) + "'>" + esc(short) + "</td>";
+      tbody.appendChild(tr);
+    }
+    table.append(thead, tbody);
+    card.append(head, table);
+    root.appendChild(card);
+  }
+}
+
+// ---- Matrix rain -------------------------------------------------------
+(function matrix() {
+  const c = $("matrix"), ctx = c.getContext("2d");
+  let cols, drops = [], size = 16;
+  const glyphs = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789$#&*+=/\\|".split("");
+  function resize() {
+    c.width = innerWidth; c.height = innerHeight;
+    cols = Math.ceil(c.width / size);
+    drops = new Array(cols).fill(0).map(() => Math.random() * -c.height / size);
+  }
+  resize();
+  addEventListener("resize", resize);
+  setInterval(() => {
+    ctx.fillStyle = "rgba(0,3,0,0.12)";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.font = size + "px monospace";
+    for (let i = 0; i < cols; i++) {
+      const ch = glyphs[(Math.random() * glyphs.length) | 0];
+      ctx.fillStyle = Math.random() > 0.975 ? "#b9ffca" : "#00c030";
+      ctx.fillText(ch, i * size, drops[i] * size);
+      if (drops[i] * size > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }, 70);
+})();
+
+// ---- WebSocket ---------------------------------------------------------
+function connect() {
+  const ws = new WebSocket("ws://" + location.host + "/ws");
+  ws.onopen = () => {
+    $("wsStatus").textContent = "channel: LIVE";
+    $("wsStatus").className = "live";
+    log("uplink established — listening on /ws", "open");
+  };
+  ws.onmessage = (ev) => { try { handle(JSON.parse(ev.data)); } catch (e) { /* ignore malformed */ } };
+  ws.onclose = () => {
+    $("wsStatus").textContent = "channel: LOST";
+    $("wsStatus").className = "offline";
+    setStatus("offline", "OFFLINE");
+    log("uplink lost — retrying…", "err");
+    setTimeout(connect, 1200);
+  };
+  ws.onerror = () => ws.close();
+}
+
+function handle(ev) {
+  switch (ev.type) {
+    case "snapshot": {
+      const s = ev.snapshot;
+      state.targets = s.targets || [];
+      state.totalPorts = s.total_ports || 0;
+      state.totalJobs = s.total_jobs || 0;
+      state.done = s.done || 0;
+      state.concurrency = s.concurrency || 0;
+      state.elapsedMs = s.elapsed_ms || 0;
+      state.started = s.started || false;
+      state.finished = s.finished || false;
+      state.interrupted = s.interrupted || false;
+      state.phase = s.phase || "";
+      state.hostsUp = new Map();
+      for (const h of s.hosts_up || []) state.hostsUp.set(h.ip, { ip: h.ip, method: h.method, rtt_ms: h.rtt_ms });
+      state.hosts = new Map();
+      for (const h of s.hosts || []) {
+        const hm = new Map();
+        for (const p of h.ports || [])
+          hm.set(p.port, { port: p.port, proto: p.proto || "tcp", state: p.state || "open", service: p.service, version: p.version, banner: p.banner, _new: false });
+        state.hosts.set(h.ip, { ip: h.ip, ports: hm });
+      }
+      if (state.started && state.finished) {
+        setStatus(state.interrupted ? "interrupted" : "done", state.interrupted ? "INTERRUPTED" : "SWEEP COMPLETE");
+        $("progLabel").textContent = (state.interrupted ? "[ abort ] " : "[ done ] ") +
+          openCount() + " open port(s) across " + state.hosts.size + " host(s) in " + fmtElapsed(state.elapsedMs);
+      } else if (state.started) {
+        const pill = { discovery: ["running", "DISCOVERING"], udp: ["udp", "UDP SWEEP"], banner: ["running", "BANNER GRAB"] }[state.phase];
+        if (pill) setStatus(pill[0], pill[1]);
+        else setStatus("running", "SWEEPING");
+        $("progLabel").textContent = "[ sweep ] " + state.targets.length + " target(s) x " + (state.totalPorts || 0) + " ports";
+      }
+      break;
+    }
+    case "phase": {
+      state.phase = ev.phase;
+      state.lastLogPct = -1;
+      const prefix = { discovery: "[ discover ] ", tcp: "[ sweep ] ", udp: "[ udp ] ", banner: "[ banner ] " }[ev.phase] || "[ ] ";
+      $("progLabel").textContent = prefix + ev.label;
+      const pill = { discovery: "DISCOVERING", tcp: "SWEEPING", udp: "UDP SWEEP", banner: "BANNER GRAB" }[ev.phase];
+      if (pill) setStatus(ev.phase === "udp" ? "udp" : "running", pill);
+      log("phase → " + ev.phase + (ev.label ? ": " + ev.label : ""), ev.phase === "udp" ? "warn" : "open");
+      break;
+    }
+    case "host_up":
+      state.hostsUp.set(ev.ip, { ip: ev.ip, method: ev.method || "?", rtt_ms: ev.rtt_ms });
+      log("HOST UP " + ev.ip + " — " + (ev.method || "?") + (ev.rtt_ms != null ? " (" + ev.rtt_ms + "ms)" : ""), "open");
+      break;
+    case "scan_start":
+      state.targets = ev.targets || [];
+      state.totalPorts = ev.total_ports || 0;
+      state.totalJobs = ev.total_jobs || 0;
+      state.started = true;
+      state.finished = false;
+      $("progLabel").textContent = "[ sweep ] " + (ev.targets || []).length + " target(s) x " + (ev.total_ports || 0) + " ports";
+      log("scan start — " + (ev.targets || []).join(", ") + " x " + (ev.total_ports || 0) + " ports", "open");
+      break;
+    case "progress":
+      state.done = ev.done; state.concurrency = ev.concurrency; state.elapsedMs = ev.elapsed_ms;
+      break;
+    case "port_open": {
+      const isNew = upsertPort(ev.ip, ev.port, ev);
+      const proto = ev.proto || "tcp";
+      const st = ev.state || "open";
+      if (state.started && !state.finished && isNew) {
+        if (st === "open|filtered") {
+          $("progLabel").textContent = "[ udp? ] " + ev.ip + ":" + ev.port + "/udp open|filtered";
+          log("UDP " + ev.ip + ":" + ev.port + " open|filtered (no reply)" + (ev.service ? " — " + ev.service : ""), "warn");
+        } else {
+          setStatus(proto === "udp" ? "udp" : "running", proto === "udp" ? "UDP SWEEP" : "SWEEPING");
+          $("progLabel").textContent = "[ hit ] " + ev.ip + ":" + ev.port + "/" + proto;
+          log("PORT " + ev.ip + ":" + ev.port + "/" + proto + " OPEN" + (ev.service ? " — " + ev.service : ""), "open");
+        }
+      } else if (state.finished && (ev.service || ev.banner)) {
+        // Post-scan banner fingerprints refine the rows; keep the DONE status.
+        log("fingerprint " + ev.ip + ":" + ev.port + " → " + (ev.service || "?") + (ev.version ? " " + ev.version : ""), "warn");
+      }
+      break;
+    }
+    case "scan_done":
+      state.finished = true;
+      state.interrupted = ev.interrupted;
+      state.elapsedMs = ev.elapsed_ms;
+      if (ev.interrupted) {
+        setStatus("interrupted", "INTERRUPTED");
+        $("progLabel").textContent = "[ abort ] " + ev.open_ports + " open port(s) captured";
+        log("SIGNAL — sweep interrupted, " + ev.open_ports + " open port(s) captured", "err");
+      } else {
+        setStatus("done", "SWEEP COMPLETE");
+        $("progLabel").textContent = "[ done ] " + ev.open_ports + " open port(s) across " + ev.hosts + " host(s) in " + fmtElapsed(ev.elapsed_ms);
+        log("SWEEP COMPLETE — " + ev.open_ports + " open port(s) / " + ev.hosts + " host(s) in " + fmtElapsed(ev.elapsed_ms), "done");
+      }
+      break;
+  }
+  updateStats();
+  updateProgress();
+  renderFleet();
+  renderHosts();
+}
+
+function upsertPort(ip, port, fields) {
+  let h = state.hosts.get(ip);
+  if (!h) { h = { ip, ports: new Map() }; state.hosts.set(ip, h); }
+  const existing = h.ports.get(port);
+  if (existing) {
+    if (fields.proto) existing.proto = fields.proto;
+    if (fields.state) existing.state = fields.state;
+    if (fields.service != null) existing.service = fields.service;
+    if (fields.version != null) existing.version = fields.version;
+    if (fields.banner != null) existing.banner = fields.banner;
+    return false;
+  }
+  h.ports.set(port, { port, proto: fields.proto || "tcp", state: fields.state || "open", service: fields.service, version: fields.version, banner: fields.banner, _new: true });
+  return true;
+}
+
+// Elapsed clock ticks locally while a scan is running.
+setInterval(() => {
+  if (state.started && !state.finished) {
+    state.elapsedMs += 250;
+    $("statElapsed").textContent = fmtElapsed(state.elapsedMs);
+  }
+}, 250);
+
+$("logToggle").addEventListener("click", () => {
+  const bar = $("logbar");
+  const hidden = bar.classList.toggle("hidden");
+  $("logToggle").textContent = hidden ? "[ SHOW ]" : "[ HIDE ]";
+});
+
+connect();
+</script>
+</body>
+</html>
