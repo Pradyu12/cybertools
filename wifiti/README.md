@@ -37,6 +37,18 @@ CH   BSSID               SIG% dBm   SECURITY             SSID
 - **Three output formats** — human table, JSON, and CSV; write to a file with
   `-o`.
 
+## Prerequisites & dependencies
+
+| Tool | Required? | Notes |
+| --- | --- | --- |
+| **Rust toolchain** (stable, via [rustup](https://rustup.rs)) | ✅ yes | Everything is pure-Rust; `cargo build` fetches all crates below automatically |
+| `netsh wlan` | Windows | Built into Windows — **no admin needed** for AP scanning |
+| `nmcli` **or** `iw` | Linux | One of these is used for AP scanning; `iw scan` needs root (`sudo iw scan`), `nmcli` usually doesn't |
+| **Monitor-mode adapter + `hcxdumptool`/`hcxtools`** | ⚠️ only for capture | Not needed for scanning or cracking. Only required if you want to **capture** a PMKID hash yourself (Linux, monitor-mode Wi-Fi card). You can also use any existing `.pmkid`/capture from the community |
+| **A wordlist** | ⚠️ for cracking | Any plaintext wordlist (e.g. rockyou, `SecLists/Passwords`) for `crack-pmkid` |
+
+Cargo crates (fetched automatically): `clap`, `serde`, `sha1`, `hmac`, `pbkdf2`, `thiserror`. No Python, no aircrack-ng, no GPU — PMKID cracking runs entirely in pure Rust.
+
 ## Build & test
 
 ```bash

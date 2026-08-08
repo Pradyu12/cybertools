@@ -61,6 +61,17 @@ Host 127.0.0.1 (-)
 - **Ctrl+C safe** — aborts in-flight probes and still prints partial results.
 - **Randomized scan order** by default to avoid tripping naive firewalls.
 
+## Prerequisites & dependencies
+
+| Tool | Required? | Notes |
+| --- | --- | --- |
+| **Rust toolchain** (stable, via [rustup](https://rustup.rs)) | ✅ yes | Everything is pure-Rust; `cargo build` fetches all crates below automatically |
+| **nmap** | ⚠️ optional | Only needed for the automatic post-scan hand-off (`vajra ... -- -sV -sC`). Install from [nmap.org](https://nmap.org) or `apt install nmap`; skip with `--no-nmap` |
+| **root / `CAP_NET_RAW`** | ⚠️ Linux only | Required for raw ICMP discovery (`-d`). Without it, discovery falls back to TCP probes automatically |
+| **Windows admin** | ❌ not needed | Ping uses `IcmpSendEcho` (no admin); UDP `open\|filtered` is reported the same as unprivileged nmap |
+
+Cargo crates (fetched automatically): `tokio`, `axum`, `clap`, `indicatif`, `serde`, `rand`, `ipnet`, `thiserror`, `libc`. The live dashboard is a single self-contained HTML file — no Node, no CDN, no browser extensions.
+
 ## Build
 
 ```bash
