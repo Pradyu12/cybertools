@@ -2,11 +2,6 @@
 members = ["vajra", "taranga"]
 resolver = "2"
 
-[workspace.package]
-edition = "2021"
-license = "MIT"
-repository = "https://github.com/Pradyu12/cybertools"
-
 [profile.release]
 lto = true
 codegen-units = 1

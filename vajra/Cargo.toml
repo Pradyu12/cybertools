@@ -25,7 +25,3 @@ ipnet = "2"
 thiserror = "1"
 libc = "0.2"
 
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true

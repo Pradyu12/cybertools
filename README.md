@@ -10,7 +10,8 @@ package manager, no Python, no system dependencies):
 | **taranga** | तरंग (wave) | Wifite-style Wi-Fi auditing — AP scanning, live signal monitoring, pure-Rust PMKID cracking | `cargo install --git https://github.com/Pradyu12/cybertools taranga` |
 
 Both install as standalone binaries into `~/.cargo/bin` (`vajra` and
-`taranga`).
+`taranga`). Note: the crate is named `vajra-rs` but the **binary is `vajra`**
+— always install the crate name `vajra-rs`.
 
 ## Install — one-liner, compiles from source (feroxbuster style)
 

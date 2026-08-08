@@ -7,6 +7,8 @@ set -euo pipefail
 
 say()  { printf '\033[1;36m[cybertools]\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31m[cybertools] ERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
 
 REPO="https://github.com/Pradyu12/cybertools"
 # which tools to install; vajra-rs -> ./vajra, taranga -> ./taranga
@@ -28,8 +30,8 @@ fi
 say "Using cargo $(cargo --version | awk '{print $2}')"
 
 # --- 2. Clone + compile + install from this repo (no crates.io) --------------
+command -v git >/dev/null 2>&1 || die "git is required — install it first (e.g. apt install git)"
 say "Cloning $REPO..."
-TMP="$(mktemp -d)"
 git clone --depth 1 "$REPO" "$TMP/cybertools" >/dev/null 2>&1 || die "could not clone $REPO"
 cd "$TMP/cybertools" || die "clone failed"
 
