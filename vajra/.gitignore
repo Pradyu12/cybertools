@@ -1,6 +1,7 @@
 # Rust build artifacts
 /target
 **/target
+Cargo.lock.bak
 
 # Local editor/session data (never commit)
 .freebuff/

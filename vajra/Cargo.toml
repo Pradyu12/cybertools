@@ -1,0 +1,31 @@
+[package]
+name = "vajra-rs"
+version = "0.3.0"
+edition = "2021"
+description = "Vajra (वज्र, the thunderbolt) — an ultra-fast async port scanner with service detection, adaptive concurrency, a live web dashboard, nmap integration, and JSON/greppable output."
+license = "MIT"
+repository = "https://github.com/Pradyu12/cybertools"
+keywords = ["port-scanner", "network", "security", "scanning", "nmap"]
+categories = ["command-line-utilities", "network-programming"]
+
+[[bin]]
+name = "vajra"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "signal", "io-util", "sync"] }
+axum = { version = "0.7", features = ["ws"] }
+futures = "0.3"
+clap = { version = "4", features = ["derive"] }
+indicatif = "0.17"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0.8"
+ipnet = "2"
+thiserror = "1"
+libc = "0.2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # cybertools installer — vajra-rs (port scanner) + taranga (Wi-Fi toolkit)
-# No setup required: installs Rust if missing, then compiles from crates.io.
+# No setup required: installs Rust if missing, then compiles from this repo.
 #
 #   curl -sSL https://raw.githubusercontent.com/Pradyu12/cybertools/main/install.sh | bash
 set -euo pipefail
@@ -8,7 +8,9 @@ set -euo pipefail
 say()  { printf '\033[1;36m[cybertools]\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31m[cybertools] ERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
-TOOLS="${1:-vajra-rs taranga}"   # `install.sh vajra-rs` installs just the scanner
+REPO="https://github.com/Pradyu12/cybertools"
+# which tools to install; vajra-rs -> ./vajra, taranga -> ./taranga
+TOOLS="${1:-vajra-rs taranga}"
 
 # --- 1. Rust toolchain ------------------------------------------------------
 if ! command -v cargo >/dev/null 2>&1; then
@@ -25,17 +27,23 @@ if ! command -v cargo >/dev/null 2>&1; then
 fi
 say "Using cargo $(cargo --version | awk '{print $2}')"
 
-# --- 2. Compile + install from crates.io -------------------------------------
+# --- 2. Clone + compile + install from this repo (no crates.io) --------------
+say "Cloning $REPO..."
+TMP="$(mktemp -d)"
+git clone --depth 1 "$REPO" "$TMP/cybertools" >/dev/null 2>&1 || die "could not clone $REPO"
+cd "$TMP/cybertools" || die "clone failed"
+
 for t in $TOOLS; do
+    dir="$t"
+    [ "$t" = "vajra-rs" ] && dir="vajra"
     say "Installing $t (compiling from source)..."
-    cargo install "$t" || die "cargo install $t failed"
+    cargo install --path "$dir" --root "$HOME/.cargo" || die "cargo install $t failed"
 done
 
 say "Done! Binaries are in ~/.cargo/bin:"
-for t in $TOOLS; do
-    bin="${t%-rs}"   # vajra-rs installs as `vajra`
-    [ -f "$HOME/.cargo/bin/$bin" ] || bin="$t"
-    say "  $bin — $HOME/.cargo/bin/$bin"
-    # shellcheck disable=SC2015
-    case ":$PATH:" in *":$HOME/.cargo/bin:"*) ;; *) echo "    (add $HOME/.cargo/bin to your PATH)";; esac
+for b in vajra taranga; do
+    if [ -x "$HOME/.cargo/bin/$b" ]; then
+        say "  $b — $HOME/.cargo/bin/$b"
+        case ":$PATH:" in *":$HOME/.cargo/bin:"*) ;; *) echo "    (add $HOME/.cargo/bin to your PATH)";; esac
+    fi
 done
